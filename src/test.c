@@ -594,7 +594,6 @@ void run_tests()
     test_axpy_matrix();
     test_transpose_matrix();
     test_matmul();
-    test_matrix_speed();
     test_activation_layer();
     test_connected_layer();
     test_im2col();
