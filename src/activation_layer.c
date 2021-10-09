@@ -17,7 +17,36 @@ matrix forward_activation_layer(layer l, matrix x)
 
     ACTIVATION a = l.activation;
     matrix y = copy_matrix(x);
-
+    int i, j;
+    for (i = 0; i < y.rows; ++i) {
+        float sum = 0;
+        for (j = 0; j < y.cols; ++j) {
+            float val = y.data[i * y.cols + j];
+            if (a == LOGISTIC) {
+                y.data[i*y.cols + j] = 1/(1 + exp(-val));
+            } else if (a == RELU) {
+                if (val < 0) {
+                    y.data[i * y.cols + j] = 0;
+                } else {
+                    y.data[i * y.cols + j] = val;
+                }
+            } else if (a == LRELU) {
+                if (val <= 0) {
+                    y.data[i * y.cols + j] = 0.01 * val;
+                } else {
+                    y.data[i * y.cols + j] = val;
+                }
+            } else if (a == SOFTMAX) {
+                y.data[i * y.cols + j] = exp(val);
+            }
+            sum += y.data[i * y.cols + j];
+        }
+        if (a == SOFTMAX) {
+            for (j = 0; j < y.cols; ++j) {
+                y.data[i * y.cols + j] /= sum;
+            }
+        }
+    }
     // TODO: 2.1
     // apply the activation function to matrix y
     // logistic(x) = 1/(1+e^(-x))
@@ -48,6 +77,32 @@ matrix backward_activation_layer(layer l, matrix dy)
     // d/dx lrelu(x)    = 1 if x > 0 else 0.01
     // d/dx softmax(x)  = 1
 
+    int i, j;
+    for (i = 0; i < dx.rows; ++i) {
+        for (j = 0; j < dx.cols; ++j) {
+            float val = x.data[i * dx.cols + j];
+            if (a == LOGISTIC) {
+                float log = 1/(1 + exp(-val));
+                dx.data[i* dx.cols + j] = (log) * (1 - log);
+                
+            } else if (a == RELU) {
+                if (val <= 0) {
+                    dx.data[i * dx.cols + j] = 0;
+                } else {
+                    dx.data[i * dx.cols + j] = 1;
+                }
+            } else if (a == LRELU) {
+                if (val <= 0) {
+                    dx.data[i * dx.cols + j] = 0.01;
+                } else {
+                    dx.data[i * dx.cols + j] = 1;
+                }
+            } else if (a == SOFTMAX) {
+                dx.data[i * dx.cols + j] = 1;
+            }
+            dx.data[i * dx.cols + j] *= dy.data[i*dx.cols + j];
+        }
+    }
     return dx;
 }
 
