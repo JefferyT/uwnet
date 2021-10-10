@@ -49,13 +49,19 @@ matrix forward_connected_layer(layer l, matrix x)
     *l.x = copy_matrix(x);
 
     // TODO: 3.1 - run the network forward
-    matrix y = make_matrix(x.rows, l.w.cols); // Going to want to change this!
 
+    matrix y = matmul(x, l.w);
+    int i, j;
+    for (i = 0; i < y.rows; ++i) {
+        for (j = 0; j < y.cols; ++j) {
+            y.data[i * y.cols + j] += l.b.data[j];
+        }
+    }
 
     return y;
 }
 
-// Run a connected layer backward
+// Run a connected layer backward.
 // layer l: layer to run
 // matrix dy: dL/dy for this layer
 // returns: dL/dx for this layer

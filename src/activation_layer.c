@@ -17,6 +17,13 @@ matrix forward_activation_layer(layer l, matrix x)
 
     ACTIVATION a = l.activation;
     matrix y = copy_matrix(x);
+
+    // logistic(x) = 1/(1+e^(-x))
+    // relu(x)     = x if x > 0 else 0
+    // lrelu(x)    = x if x > 0 else .01 * x
+    // softmax(x)  = e^{x_i} / sum(e^{x_j}) for all x_j in the same row 
+
+
     int i, j;
     for (i = 0; i < y.rows; ++i) {
         float sum = 0;
@@ -47,13 +54,7 @@ matrix forward_activation_layer(layer l, matrix x)
             }
         }
     }
-    // TODO: 2.1
-    // apply the activation function to matrix y
-    // logistic(x) = 1/(1+e^(-x))
-    // relu(x)     = x if x > 0 else 0
-    // lrelu(x)    = x if x > 0 else .01 * x
-    // softmax(x)  = e^{x_i} / sum(e^{x_j}) for all x_j in the same row 
-
+    
     return y;
 }
 
@@ -67,11 +68,6 @@ matrix backward_activation_layer(layer l, matrix dy)
     matrix dx = copy_matrix(dy);
     ACTIVATION a = l.activation;
 
-    // TODO: 2.2
-    // calculate dL/dx = f'(x) * dL/dy
-    // assume for this part that f'(x) = 1 for softmax because we will only use
-    // it with cross-entropy loss for classification and include it in the loss
-    // calculations
     // d/dx logistic(x) = logistic(x) * (1 - logistic(x))
     // d/dx relu(x)     = 1 if x > 0 else 0
     // d/dx lrelu(x)    = 1 if x > 0 else 0.01
