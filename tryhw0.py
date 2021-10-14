@@ -10,12 +10,13 @@ def softmax_model():
     return make_net(l)
 
 def neural_net():
-    l = [   make_connected_layer(inputs, 32),
+    l = [   make_connected_layer(inputs, 64),
             make_activation_layer(RELU),
-            make_connected_layer(32, 10),
-            # make_connected_layer(32, 16),
-            # make_activation_layer(LRELU),
-            # make_connected_layer(16, 10),
+            make_connected_layer(64, 32),
+            make_activation_layer(RELU),
+            make_connected_layer(32, 16),
+            make_activation_layer(RELU),
+            make_connected_layer(16, 10),
             make_activation_layer(SOFTMAX)]
     return make_net(l)
 
@@ -34,7 +35,7 @@ batch = 128
 iters = 5000
 rate = .01
 momentum = .9
-decay = .01
+decay = .1
 
 m = neural_net()
 print("training...")
