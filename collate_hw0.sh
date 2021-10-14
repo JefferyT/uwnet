@@ -18,4 +18,3 @@ prepare hw0.ipynb
 tar cvzf hw0.tar.gz submit
 rm -rf submit/
 echo "Done. Please upload hw0.tar.gz to Canvas."
-
