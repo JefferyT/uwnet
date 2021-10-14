@@ -1,6 +1,6 @@
 from uwnet import *
 
-mnist = 1
+mnist = 0
 
 inputs = 784 if mnist else 3072
 
@@ -10,12 +10,14 @@ def softmax_model():
     return make_net(l)
 
 def neural_net():
-    l = [   make_connected_layer(inputs, 64),
-            make_activation_layer(RELU),
+    l = [   make_connected_layer(inputs, 128),
+            make_activation_layer(LRELU),
+            make_connected_layer(128, 64),
+            make_activation_layer(LRELU),
             make_connected_layer(64, 32),
-            make_activation_layer(RELU),
+            make_activation_layer(LRELU),
             make_connected_layer(32, 16),
-            make_activation_layer(RELU),
+            make_activation_layer(LRELU),
             make_connected_layer(16, 10),
             make_activation_layer(SOFTMAX)]
     return make_net(l)
@@ -31,11 +33,11 @@ print("done")
 print
 
 print("making model...")
-batch = 128
+batch = 512
 iters = 5000
 rate = .01
 momentum = .9
-decay = .1
+decay = .01
 
 m = neural_net()
 print("training...")
