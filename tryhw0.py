@@ -2,6 +2,13 @@ from uwnet import *
 
 mnist = 0
 
+# Upon training our own model with some modifications to our hyperparameters, we were able to get mnist
+# with a test accuracy > 97%.
+
+# For CIFAR, the model needed to be a lot more complex to achieve a comparable accuracy. If we changed
+# the model to be for MNIST, the model decreasing in complexity will impact the CIFAR results far more
+# than for MNIST. 
+
 inputs = 784 if mnist else 3072
 
 def softmax_model():
@@ -9,6 +16,7 @@ def softmax_model():
         make_activation_layer(SOFTMAX)]
     return make_net(l)
 
+# Designed this for CIFAR
 def neural_net():
     l = [   make_connected_layer(inputs, 128),
             make_activation_layer(LRELU),
