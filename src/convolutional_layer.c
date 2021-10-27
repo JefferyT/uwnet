@@ -1,4 +1,4 @@
-#include <stdlib.h>
+ #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
 #include <string.h>
@@ -41,6 +41,23 @@ matrix backward_convolutional_bias(matrix dy, int n)
     return db;
 }
 
+
+float getVal(image im, int row, int col, int color) {
+    assert(color < im.c);
+    if (row < 0 || row > im.h || col < 0 || col > im.w) {
+        return 0;
+    }
+    return im.data[col + row * im.w  + color * im.w * im.h];
+}
+
+void getBatch(image im, matrix ret, int row, int col, int mCol, int color, int size) {
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            
+        }
+    }
+}
+
 // Make a column matrix out of an image
 // image im: image to process
 // int size: kernel size for convolution operation
@@ -58,6 +75,14 @@ matrix im2col(image im, int size, int stride)
     // TODO: 5.1
     // Fill in the column matrix with patches from the image
 
+    for (i = 0; i < im.c; i++) {
+        for (j = 0; j < outw; j += stride) {
+            for (k = 0; k < outh; k += stride) {
+                getBatch(im, col, k, j, i, size);
+            }
+        }
+    }
+    
 
 
     return col;
