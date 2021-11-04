@@ -50,10 +50,15 @@ float getVal(image im, int row, int col, int color) {
     return im.data[col + row * im.w  + color * im.w * im.h];
 }
 
-void getBatch(image im, matrix ret, int row, int col, int mCol, int color, int size) {
-    for (int i = 0; i < size; i++) {
-        for (int j = 0; j < size; j++) {
-            
+void getBatch(image im, matrix ret, int r, int c, int mCol, int color, int size) {
+    int offset = -(size/2);
+    for (int i = 0; i < size; i++) { // row
+        for (int j = 0; j < size; j++) { // col
+            int mRow = i*size + j + color * size * size;
+            float val = getVal(im, r + i + offset, c + j + offset, color);
+            // printf("%f\n", val);
+            ret.data[mRow * ret.cols + mCol] = val;
+
         }
     }
 }
@@ -76,9 +81,11 @@ matrix im2col(image im, int size, int stride)
     // Fill in the column matrix with patches from the image
 
     for (i = 0; i < im.c; i++) {
+        int mCol = 0;
         for (j = 0; j < outw; j += stride) {
-            for (k = 0; k < outh; k += stride) {
-                getBatch(im, col, k, j, i, size);
+            for (k = 0; k < outh; k += stride) { 
+                getBatch (im, col, k, j, mCol, i, size);
+                mCol++;
             }
         }
     }
