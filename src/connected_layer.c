@@ -51,14 +51,10 @@ matrix forward_connected_layer(layer l, matrix x)
     // TODO: 3.1 - run the network forward
 
     matrix y = matmul(x, l.w);
-    int i, j;
-    for (i = 0; i < y.rows; ++i) {
-        for (j = 0; j < y.cols; ++j) {
-            y.data[i * y.cols + j] += l.b.data[j];
-        }
-    }
+    matrix res = forward_bias(y, l.b);
+    free_matrix(y);
 
-    return y;
+    return res;
 }
 
 // Run a connected layer backward.
