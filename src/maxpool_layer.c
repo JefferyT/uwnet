@@ -85,7 +85,18 @@ matrix backward_maxpool_layer(layer l, matrix dy)
     // corresponding delta with the delta from the output. This should be
     // similar to the forward method in structure.
 
-
+    for (int i = 0; i < l.channels; i++) {
+        int y = 0;
+        for (int j = 0; j < outh; j++) {
+            int x = 0;
+            for (int k = 0; k < outw; k++) {
+                float max = getMax(l, x, y, i);
+                // out.data[k + outw * (j + outh * i)] = max;
+                x += l.stride;
+            }
+            y += l.stride;
+        }
+    }
 
     return dx;
 }
