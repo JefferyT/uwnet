@@ -1,4 +1,4 @@
- #include <stdlib.h>
+#include <stdlib.h>
 #include <math.h>
 #include <assert.h>
 #include <string.h>
@@ -15,10 +15,12 @@ matrix forward_convolutional_bias(matrix xw, matrix b)
 
     matrix y = copy_matrix(xw);
     int spatial = xw.cols / b.cols;
-    int i,j;
-    for(i = 0; i < y.rows; ++i){
-        for(j = 0; j < y.cols; ++j){
-            y.data[i*y.cols + j] += b.data[j/spatial];
+    int i, j;
+    for (i = 0; i < y.rows; ++i)
+    {
+        for (j = 0; j < y.cols; ++j)
+        {
+            y.data[i * y.cols + j] += b.data[j / spatial];
         }
     }
     return y;
@@ -32,33 +34,41 @@ matrix backward_convolutional_bias(matrix dy, int n)
     assert(dy.cols % n == 0);
     matrix db = make_matrix(1, n);
     int spatial = dy.cols / n;
-    int i,j;
-    for(i = 0; i < dy.rows; ++i){
-        for(j = 0; j < dy.cols; ++j){
-            db.data[j/spatial] += dy.data[i*dy.cols + j];
+    int i, j;
+    for (i = 0; i < dy.rows; ++i)
+    {
+        for (j = 0; j < dy.cols; ++j)
+        {
+            db.data[j / spatial] += dy.data[i * dy.cols + j];
         }
     }
     return db;
 }
 
-
-float getVal(image im, int row, int col, int color) {
+float getValFromIm(image im, int row, int col, int color)
+{
     assert(color < im.c);
-    if (row < 0 || row > im.h || col < 0 || col > im.w) {
+    if (row < 0 || row >= im.h || col < 0 || col >= im.w || color < 0 || color >= im.c)
+    {
         return 0;
     }
-    return im.data[col + row * im.w  + color * im.w * im.h];
+    return im.data[col + (row + color * im.h) * im.w];
 }
 
-void getBatch(image im, matrix ret, int r, int c, int mCol, int color, int size) {
-    int offset = -(size/2);
-    for (int i = 0; i < size; i++) { // row
-        for (int j = 0; j < size; j++) { // col
-            int mRow = i*size + j + color * size * size;
-            float val = getVal(im, r + i + offset, c + j + offset, color);
+void set_batch(image im, matrix ret, int r, int c, int mCol, int color, int size)
+{
+    int offset = -(size / 2);
+    if (size % 2 == 0) {
+        offset++;
+    }
+    for (int i = 0; i < size; i++)
+    { // row
+        for (int j = 0; j < size; j++)
+        { // col
+            int mRow = i * size + j + color * size * size;
+            float val = getValFromIm(im, r + i + offset, c + j + offset, color);
             // printf("%f\n", val);
             ret.data[mRow * ret.cols + mCol] = val;
-
         }
     }
 }
@@ -71,29 +81,45 @@ void getBatch(image im, matrix ret, int r, int c, int mCol, int color, int size)
 matrix im2col(image im, int size, int stride)
 {
     int i, j, k;
-    int outw = (im.w-1)/stride + 1;
-    int outh = (im.h-1)/stride + 1;
-    int rows = im.c*size*size;
+    int outw = (im.w - 1) / stride + 1;
+    int outh = (im.h - 1) / stride + 1;
+    int rows = im.c * size * size;
     int cols = outw * outh;
     matrix col = make_matrix(rows, cols);
 
     // TODO: 5.1
     // Fill in the column matrix with patches from the image
 
-    for (i = 0; i < im.c; i++) {
+    for (i = 0; i < im.c; i++)
+    {
         int mCol = 0;
-        for (j = 0; j < outw; j += stride) {
-            for (k = 0; k < outh; k += stride) { 
-                getBatch (im, col, k, j, mCol, i, size);
+        int row = 0;
+        for (k = 0; k < outh; k++)
+        {
+            int column = 0;
+            for (j = 0; j < outw; j++)
+            {
+                set_batch(im, col, row, column, mCol, i, size);
                 mCol++;
+                column += stride;
             }
+            row += stride;
         }
     }
-    
-
-
     return col;
 }
+
+
+float getValFromIm(image im, int row, int col, int color)
+{
+    assert(color < im.c);
+    if (row < 0 || row >= im.h || col < 0 || col >= im.w || color < 0 || color >= im.c)
+    {
+        return 0;
+    }
+    return im.data[col + (row + color * im.h) * im.w];
+}
+
 
 // The reverse of im2col, add elements back into image
 // matrix col: column matrix to put back into image
@@ -105,14 +131,18 @@ image col2im(int width, int height, int channels, matrix col, int size, int stri
     int i, j, k;
 
     image im = make_image(width, height, channels);
-    int outw = (im.w-1)/stride + 1;
-    int rows = im.c*size*size;
+    int outw = (im.w - 1) / stride + 1;
+    int rows = im.c * size * size;
 
     // TODO: 5.2
     // Add values into image im from the column matrix
-    
-
-
+    for (i = 0; i < channels; i++) {
+        for (j = 0; j < height; j++) {
+            for (k = 0; k < width; k++) {
+                
+            }
+        }
+    }
     return im;
 }
 
@@ -122,22 +152,24 @@ image col2im(int width, int height, int channels, matrix col, int size, int stri
 // returns: the result of running the layer
 matrix forward_convolutional_layer(layer l, matrix in)
 {
-    assert(in.cols == l.width*l.height*l.channels);
+    assert(in.cols == l.width * l.height * l.channels);
     // Saving our input
     // Probably don't change this
     free_matrix(*l.x);
     *l.x = copy_matrix(in);
 
     int i, j;
-    int outw = (l.width-1)/l.stride + 1;
-    int outh = (l.height-1)/l.stride + 1;
-    matrix out = make_matrix(in.rows, outw*outh*l.filters);
-    for(i = 0; i < in.rows; ++i){
-        image example = float_to_image(in.data + i*in.cols, l.width, l.height, l.channels);
+    int outw = (l.width - 1) / l.stride + 1;
+    int outh = (l.height - 1) / l.stride + 1;
+    matrix out = make_matrix(in.rows, outw * outh * l.filters);
+    for (i = 0; i < in.rows; ++i)
+    {
+        image example = float_to_image(in.data + i * in.cols, l.width, l.height, l.channels);
         matrix x = im2col(example, l.size, l.stride);
         matrix wx = matmul(l.w, x);
-        for(j = 0; j < wx.rows*wx.cols; ++j){
-            out.data[i*out.cols + j] = wx.data[j];
+        for (j = 0; j < wx.rows * wx.cols; ++j)
+        {
+            out.data[i * out.cols + j] = wx.data[j];
         }
         free_matrix(x);
         free_matrix(wx);
@@ -155,26 +187,25 @@ matrix forward_convolutional_layer(layer l, matrix in)
 matrix backward_convolutional_layer(layer l, matrix dy)
 {
     matrix in = *l.x;
-    assert(in.cols == l.width*l.height*l.channels);
+    assert(in.cols == l.width * l.height * l.channels);
 
     int i;
-    int outw = (l.width-1)/l.stride + 1;
-    int outh = (l.height-1)/l.stride + 1;
-
+    int outw = (l.width - 1) / l.stride + 1;
+    int outh = (l.height - 1) / l.stride + 1;
 
     matrix db = backward_convolutional_bias(dy, l.db.cols);
     axpy_matrix(1, db, l.db);
     free_matrix(db);
 
-
-    matrix dx = make_matrix(dy.rows, l.width*l.height*l.channels);
+    matrix dx = make_matrix(dy.rows, l.width * l.height * l.channels);
     matrix wt = transpose_matrix(l.w);
 
-    for(i = 0; i < in.rows; ++i){
-        image example = float_to_image(in.data + i*in.cols, l.width, l.height, l.channels);
+    for (i = 0; i < in.rows; ++i)
+    {
+        image example = float_to_image(in.data + i * in.cols, l.width, l.height, l.channels);
 
         dy.rows = l.filters;
-        dy.cols = outw*outh;
+        dy.cols = outw * outh;
 
         matrix x = im2col(example, l.size, l.stride);
         matrix xt = transpose_matrix(x);
@@ -183,7 +214,7 @@ matrix backward_convolutional_layer(layer l, matrix dy)
 
         matrix col = matmul(wt, dy);
         image dxi = col2im(l.width, l.height, l.channels, col, l.size, l.stride);
-        memcpy(dx.data + i*dx.cols, dxi.data, dx.cols * sizeof(float));
+        memcpy(dx.data + i * dx.cols, dxi.data, dx.cols * sizeof(float));
         free_matrix(col);
 
         free_matrix(x);
@@ -191,11 +222,10 @@ matrix backward_convolutional_layer(layer l, matrix dy)
         free_matrix(dw);
         free_image(dxi);
 
-        dy.data = dy.data + dy.rows*dy.cols;
+        dy.data = dy.data + dy.rows * dy.cols;
     }
     free_matrix(wt);
     return dx;
-
 }
 
 // Update convolutional layer
@@ -223,14 +253,13 @@ layer make_convolutional_layer(int w, int h, int c, int filters, int size, int s
     l.filters = filters;
     l.size = size;
     l.stride = stride;
-    l.w  = random_matrix(filters, size*size*c, sqrtf(2.f/(size*size*c)));
-    l.dw = make_matrix(filters, size*size*c);
-    l.b  = make_matrix(1, filters);
+    l.w = random_matrix(filters, size * size * c, sqrtf(2.f / (size * size * c)));
+    l.dw = make_matrix(filters, size * size * c);
+    l.b = make_matrix(1, filters);
     l.db = make_matrix(1, filters);
     l.x = calloc(1, sizeof(matrix));
-    l.forward  = forward_convolutional_layer;
+    l.forward = forward_convolutional_layer;
     l.backward = backward_convolutional_layer;
-    l.update   = update_convolutional_layer;
+    l.update = update_convolutional_layer;
     return l;
 }
-
