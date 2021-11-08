@@ -57,17 +57,21 @@ float getValFromIm(image im, int row, int col, int color)
 
 void set_batch(image im, matrix ret, int r, int c, int mCol, int color, int size)
 {
+    // offset is will calculate be used to calculate the top left of the filter
     int offset = -(size / 2);
     if (size % 2 == 0) {
         offset++;
     }
+    // loop through every element of the filter
     for (int i = 0; i < size; i++)
     { // row
         for (int j = 0; j < size; j++)
         { // col
+            // mRow calculates the row of the column matrix
             int mRow = i * size + j + color * size * size;
+            // get the value from the given pixel in the image
             float val = getValFromIm(im, r + i + offset, c + j + offset, color);
-            // printf("%f\n", val);
+            // set the value in the matrix
             ret.data[mRow * ret.cols + mCol] = val;
         }
     }
@@ -94,13 +98,16 @@ matrix im2col(image im, int size, int stride)
     {
         int mCol = 0;
         int row = 0;
-        for (k = 0; k < outh; k++)
+        // outh is the number of rows that will be processed in the original image
+        for (j = 0; j < outh; j++)
         {
+            // for each row that is going to be processed, row keeps track of which actual row it is
             int column = 0;
-            for (j = 0; j < outw; j++)
+            for (k = 0; k < outw; k++)
             {
                 set_batch(im, col, row, column, mCol, i, size);
                 mCol++;
+                // for each column, column keeps track of which column is being processed
                 column += stride;
             }
             row += stride;
@@ -110,16 +117,35 @@ matrix im2col(image im, int size, int stride)
 }
 
 
-float getValFromIm(image im, int row, int col, int color)
+void addValInIm(image im, int row, int col, int color, float val)
 {
     assert(color < im.c);
     if (row < 0 || row >= im.h || col < 0 || col >= im.w || color < 0 || color >= im.c)
     {
-        return 0;
+    } else {
+        im.data[col + (row + color * im.h) * im.w] += val;
+
     }
-    return im.data[col + (row + color * im.h) * im.w];
 }
 
+
+// given an image and a column matrix, add the convolution at r, c into the image
+void get_batch(image im, matrix mat, int r, int c, int mCol, int color, int size)
+{
+    int offset = -(size / 2);
+    if (size % 2 == 0) {
+        offset++;
+    }
+    for (int i = 0; i < size; i++)
+    { // row
+        for (int j = 0; j < size; j++)
+        { // col
+            int mRow = i * size + j + color * size * size;
+            float val = mat.data[mRow * mat.cols + mCol];
+            addValInIm(im, r + i + offset, c + j + offset, color, val);
+        }
+    }
+}
 
 // The reverse of im2col, add elements back into image
 // matrix col: column matrix to put back into image
@@ -132,15 +158,30 @@ image col2im(int width, int height, int channels, matrix col, int size, int stri
 
     image im = make_image(width, height, channels);
     int outw = (im.w - 1) / stride + 1;
-    int rows = im.c * size * size;
+    // int rows = im.c * size * size;
 
     // TODO: 5.2
     // Add values into image im from the column matrix
+
+    // outh is the number of rows that is processed
+    int outh = col.cols / outw;
+    // loop through each of the channels
     for (i = 0; i < channels; i++) {
-        for (j = 0; j < height; j++) {
-            for (k = 0; k < width; k++) {
-                
+        // mCol keeps track of which column in col is being processed
+        int mCol = 0;
+        // y keeps track the row of the center of the filter
+        int y = 0;
+        for (j = 0; j < outh; j++) {
+            // x keeps track of the column of the center of the filter
+            int x = 0;
+            for (k = 0; k < outw; k++) {
+                // uses get batch, passing in the center of the filter as well
+                // as the column of the matrix and the color
+                get_batch(im, col, y, x, mCol, i, size);
+                mCol++;
+                x += stride;
             }
+            y += stride;
         }
     }
     return im;
@@ -236,6 +277,13 @@ matrix backward_convolutional_layer(layer l, matrix dy)
 void update_convolutional_layer(layer l, float rate, float momentum, float decay)
 {
     // TODO: 5.3
+    axpy_matrix(decay, l.w, l.dw);
+    axpy_matrix(-rate, l.dw, l.w);
+    scal_matrix(momentum, l.dw);
+
+    // Do the same for biases as well but no need to use weight decay on biases
+    axpy_matrix(-rate, l.db, l.b);
+    scal_matrix(momentum, l.db);
 }
 
 // Make a new convolutional layer

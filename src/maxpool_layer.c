@@ -5,6 +5,29 @@
 #include "uwnet.h"
 
 
+float getMax(layer l, int x, int y, int c) {
+    int offset = -(l.size / 2);
+    if (l.size % 2 == 0) {
+        offset++;
+    }
+    float max = -INFINITY;
+    for (int i = 0; i < l.size; i++) {
+        for (int j = 0; j < l.size; j++) {
+            int row = y + i + offset;
+            int col = x + j + offset;
+            if (row >= 0 && row < l.height && col >= 0 && col < l.width) {
+                int index = col + l.width * (row + c * l.height);
+                float val = l.x->data[index];
+                if (val > max) {
+                    max = val;
+                }
+            }
+            
+        }
+    }
+    return max;
+}
+
 // Run a maxpool layer on input
 // layer l: pointer to layer to run
 // matrix in: input to layer
@@ -21,9 +44,18 @@ matrix forward_maxpool_layer(layer l, matrix in)
     matrix out = make_matrix(in.rows, outw*outh*l.channels);
 
     // TODO: 6.1 - iterate over the input and fill in the output with max values
-
-
-
+    for (int i = 0; i < l.channels; i++) {
+        int y = 0;
+        for (int j = 0; j < outh; j++) {
+            int x = 0;
+            for (int k = 0; k < outw; k++) {
+                float max = getMax(l, x, y, i);
+                out.data[k + outw * (j + outh * i)] = max;
+                x += l.stride;
+            }
+            y += l.stride;
+        }
+    }
     return out;
 }
 
@@ -37,6 +69,18 @@ matrix backward_maxpool_layer(layer l, matrix dy)
 
     int outw = (l.width-1)/l.stride + 1;
     int outh = (l.height-1)/l.stride + 1;
+    
+    printf("in.rows %i\n", in.rows);
+    printf("in.cols %i\n", in.cols);
+    printf("outw %i\n", outw);
+    printf("outh %i\n", outh);
+    printf("l.width %i\n", l.width);
+    printf("l.height %i\n", l.height);
+    printf("channels %i\n", l.channels);
+    printf("dx.rows %i\n", dx.rows);
+    printf("dx.cols %i\n", dx.cols);
+    printf("dy.rows %i\n", dy.rows);
+    printf("dy.cols %i\n", dy.cols);
     // TODO: 6.2 - find the max values in the input again and fill in the
     // corresponding delta with the delta from the output. This should be
     // similar to the forward method in structure.
