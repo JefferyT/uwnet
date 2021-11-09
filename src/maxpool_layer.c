@@ -185,7 +185,7 @@ matrix backward_maxpool_layer(layer l, matrix dy)
                         }
                     }
                     float val = dy.data[k + outw * (j + outh * i) + dy.cols * im];
-                    dx.data[max_col + l.width * (max_row + i * l.height)] += val;
+                    dx.data[max_col + l.width * (max_row + i * l.height) + im * width] += val;
                     x += l.stride;
                 }
                 y += l.stride;
@@ -220,6 +220,3 @@ layer make_maxpool_layer(int w, int h, int c, int size, int stride)
     l.update = update_maxpool_layer;
     return l;
 }
-
-
-

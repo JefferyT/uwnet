@@ -51,6 +51,8 @@ matrix forward_connected_layer(layer l, matrix x)
     // TODO: 3.1 - run the network forward
 
     matrix y = matmul(x, l.w);
+    // int ops = x.cols * x.rows * l.w.cols;
+    // printf("%d \n", ops);
     matrix res = forward_bias(y, l.b);
     free_matrix(y);
 
