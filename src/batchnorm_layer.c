@@ -3,6 +3,8 @@
 #include <assert.h>
 #include "uwnet.h"
 
+#define EPS 0.00001f
+
 // Take mean of matrix x over rows and spatial dimension
 // matrix x: matrix with data
 // int groups: number of distinct means to take, usually equal to # outputs
@@ -14,12 +16,15 @@ matrix mean(matrix x, int groups)
     matrix m = make_matrix(1, groups);
     int n = x.cols / groups;
     int i, j;
-    for(i = 0; i < x.rows; ++i){
-        for(j = 0; j < x.cols; ++j){
-            m.data[j/n] += x.data[i*x.cols + j];
+    for (i = 0; i < x.rows; ++i)
+    {
+        for (j = 0; j < x.cols; ++j)
+        {
+            m.data[j / n] += x.data[i * x.cols + j];
         }
     }
-    for(i = 0; i < m.cols; ++i){
+    for (i = 0; i < m.cols; ++i)
+    {
         m.data[i] = m.data[i] / x.rows / n;
     }
     return m;
@@ -32,12 +37,15 @@ matrix variance(matrix x, matrix m, int groups)
     // TODO: 7.1 - Calculate variance
     int n = x.cols / groups;
     int i, j;
-    for(i = 0; i < x.rows; ++i){
-        for(j = 0; j < x.cols; ++j){
-            v.data[j/n] += (x.data[i*x.cols + j] - m.data[j/n]) * (x.data[i*x.cols + j] - m.data[j/n]);
+    for (i = 0; i < x.rows; ++i)
+    {
+        for (j = 0; j < x.cols; ++j)
+        {
+            v.data[j / n] += (x.data[i * x.cols + j] - m.data[j / n]) * (x.data[i * x.cols + j] - m.data[j / n]);
         }
     }
-    for(i = 0; i < m.cols; ++i){
+    for (i = 0; i < m.cols; ++i)
+    {
         v.data[i] = v.data[i] / x.rows / n;
     }
     return v;
@@ -50,16 +58,16 @@ matrix normalize(matrix x, matrix m, matrix v, int groups)
     matrix norm = make_matrix(x.rows, x.cols);
     // TODO: 7.2 - Normalize x
     int n = x.cols / groups;
-    float eps = 0.00001f;
     int i, j;
-    for (i = 0; i < x.rows; ++i) {
-        for (j = 0; j < x.cols; ++j) {
-            norm.data[i * x.cols + j] = (x.data[i * x.cols + j] - m.data[j/n]) / sqrt(v.data[j/n]+eps);
+    for (i = 0; i < x.rows; ++i)
+    {
+        for (j = 0; j < x.cols; ++j)
+        {
+            norm.data[i * x.cols + j] = (x.data[i * x.cols + j] - m.data[j / n]) / sqrt(v.data[j / n] + EPS);
         }
     }
     return norm;
 }
-
 
 // Run an batchnorm layer on input
 // layer l: pointer to layer to run
@@ -72,7 +80,8 @@ matrix forward_batchnorm_layer(layer l, matrix x)
     free_matrix(*l.x);
     *l.x = copy_matrix(x);
 
-    if(x.rows == 1){
+    if (x.rows == 1)
+    {
         return normalize(x, l.rolling_mean, l.rolling_variance, l.channels);
     }
 
@@ -81,9 +90,9 @@ matrix forward_batchnorm_layer(layer l, matrix x)
     matrix v = variance(x, m, l.channels);
     matrix y = normalize(x, m, v, l.channels);
 
-    scal_matrix(1-s, l.rolling_mean);
+    scal_matrix(1 - s, l.rolling_mean);
     axpy_matrix(s, m, l.rolling_mean);
-    scal_matrix(1-s, l.rolling_variance);
+    scal_matrix(1 - s, l.rolling_variance);
     axpy_matrix(s, v, l.rolling_variance);
 
     free_matrix(m);
@@ -97,25 +106,53 @@ matrix delta_mean(matrix d, matrix v)
     int groups = v.cols;
     matrix dm = make_matrix(1, groups);
     // TODO 7.3 - Calculate dL/dm
+    int n = d.cols / groups;
+    int i, j;
+    for (i = 0; i < d.rows; ++i)
+    {
+        for (j = 0; j < d.cols; ++j)
+        {
+            dm.data[j / n] += d.data[i * d.cols + j] * (-1 / (sqrt(v.data[j / n] + EPS)));
+        }
+    }
     return dm;
 }
-
 
 matrix delta_variance(matrix d, matrix x, matrix m, matrix v)
 {
     int groups = m.cols;
     matrix dv = make_matrix(1, groups);
     // TODO 7.4 - Calculate dL/dv
+    int n = d.cols / groups;
+    int i, j;
+    for (i = 0; i < d.rows; ++i)
+    {
+        for (j = 0; j < d.cols; ++j)
+        {
+            dv.data[j / n] += d.data[i * d.cols + j] * (x.data[i * d.cols + j] - m.data[j / n]) * (-0.5) * (pow(v.data[j / n] + EPS, -1.5));
+        }
+    }
     return dv;
 }
 
 matrix delta_batch_norm(matrix d, matrix dm, matrix dv, matrix m, matrix v, matrix x)
 {
+    int groups = m.cols;
     matrix dx = make_matrix(d.rows, d.cols);
     // TODO 7.5 - Calculate dL/dx
+    int n = x.cols / groups;
+    int i, j;
+    for (i = 0; i < dx.rows; ++i)
+    {
+        for (j = 0; j < dx.cols; ++j)
+        {
+            dx.data[i * dx.cols + j] = (d.data[i * d.cols + j] / sqrt(v.data[j / n] + EPS));
+            dx.data[i * dx.cols + j] += dv.data[j / n] * 2.0 * (x.data[i * x.cols + j] - m.data[j / n])/ x.rows / n;
+            dx.data[i * dx.cols + j] += dm.data[j / n] / x.rows / n;
+        }
+    }
     return dx;
 }
-
 
 // Run an batchnorm layer on input
 // layer l: pointer to layer to run
@@ -145,7 +182,7 @@ matrix backward_batchnorm_layer(layer l, matrix dy)
 // float rate: SGD learning rate
 // float momentum: SGD momentum term
 // float decay: l2 normalization term
-void update_batchnorm_layer(layer l, float rate, float momentum, float decay){}
+void update_batchnorm_layer(layer l, float rate, float momentum, float decay) {}
 
 layer make_batchnorm_layer(int groups)
 {
