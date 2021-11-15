@@ -30,6 +30,16 @@ matrix variance(matrix x, matrix m, int groups)
 {
     matrix v = make_matrix(1, groups);
     // TODO: 7.1 - Calculate variance
+    int n = x.cols / groups;
+    int i, j;
+    for(i = 0; i < x.rows; ++i){
+        for(j = 0; j < x.cols; ++j){
+            v.data[j/n] += (x.data[i*x.cols + j] - m.data[j/n]) * (x.data[i*x.cols + j] - m.data[j/n]);
+        }
+    }
+    for(i = 0; i < m.cols; ++i){
+        v.data[i] = v.data[i] / x.rows / n;
+    }
     return v;
 }
 
@@ -39,6 +49,14 @@ matrix normalize(matrix x, matrix m, matrix v, int groups)
 {
     matrix norm = make_matrix(x.rows, x.cols);
     // TODO: 7.2 - Normalize x
+    int n = x.cols / groups;
+    float eps = 0.00001f;
+    int i, j;
+    for (i = 0; i < x.rows; ++i) {
+        for (j = 0; j < x.cols; ++j) {
+            norm.data[i * x.cols + j] = (x.data[i * x.cols + j] - m.data[j/n]) / sqrt(v.data[j/n]+eps);
+        }
+    }
     return norm;
 }
 

@@ -20,7 +20,7 @@ def softmax_model():
 def neural_net():
     l = [   make_connected_layer(inputs, 128),
             make_activation_layer(LRELU),
-            make_connected_layer(128, 64),
+            make_connected_layer(128, haikyu64),
             make_activation_layer(LRELU),
             make_connected_layer(64, 32),
             make_activation_layer(LRELU),
